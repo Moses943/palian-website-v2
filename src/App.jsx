@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import { supabase } from "./lib/supabaseClient";
 import {
   Menu, X, ArrowRight, ArrowLeft, ChevronDown, ChevronRight, ShieldCheck, Clock,
   TrendingUp, Users, Wallet, Briefcase, GraduationCap, Car, Building2,
@@ -32,6 +33,7 @@ const C = {
 const NAV = [
   { label: "Home", href: "#home" },
   { label: "About", href: "#about" },
+  { label: "Our Team", href: "#team" },
   { label: "Loan Products", href: "#products" },
   { label: "Calculator", href: "#calculator" },
   { label: "Branches", href: "#branches" },
@@ -42,7 +44,7 @@ const NAV = [
 const STATS = [
   { label: "Happy Customers", value: 18400, suffix: "+", icon: Users },
   { label: "Loans Approved", value: 26900, suffix: "+", icon: CheckCircle2 },
-  { label: "Active Branches", value: 14, suffix: "", icon: Building2 },
+  { label: "Provinces Covered", value: 10, suffix: "", icon: Building2 },
   { label: "Years of Service", value: 12, suffix: "", icon: Landmark },
 ];
 
@@ -92,47 +94,18 @@ const FAQS = [
 ];
 
 const BRANCHES = [
-  { name: "Lusaka — Cairo Road", address: "Plot 22, Cairo Road, Lusaka", phone: "+260 211 22 3344", email: "lusaka@palianmoney.co.zm" },
-  { name: "Ndola — Broadway", address: "14 Broadway, Ndola", phone: "+260 212 61 7788", email: "ndola@palianmoney.co.zm" },
-  { name: "Kitwe — Independence Ave", address: "56 Independence Avenue, Kitwe", phone: "+260 212 22 9911", email: "kitwe@palianmoney.co.zm" },
-  { name: "Livingstone — Mosi-oa-Tunya Rd", address: "9 Mosi-oa-Tunya Road, Livingstone", phone: "+260 213 32 1100", email: "livingstone@palianmoney.co.zm" },
+  { province: "Lusaka Province", name: "Lusaka — Cairo Road", address: "Plot 22, Cairo Road, Lusaka", phone: "+260 211 22 3344", email: "lusaka@palianmoney.co.zm" },
+  { province: "Copperbelt Province", name: "Ndola — Broadway", address: "14 Broadway, Ndola", phone: "+260 212 61 7788", email: "ndola@palianmoney.co.zm" },
+  { province: "Copperbelt Province", name: "Kitwe — Independence Ave", address: "56 Independence Avenue, Kitwe", phone: "+260 212 22 9911", email: "kitwe@palianmoney.co.zm" },
+  { province: "Southern Province", name: "Livingstone — Mosi-oa-Tunya Rd", address: "9 Mosi-oa-Tunya Road, Livingstone", phone: "+260 213 32 1100", email: "livingstone@palianmoney.co.zm" },
+  { province: "Central Province", name: "Kabwe — Freedom Way", address: "18 Freedom Way, Kabwe", phone: "+260 215 22 4410", email: "kabwe@palianmoney.co.zm" },
+  { province: "Eastern Province", name: "Chipata — Umodzi Highway", address: "5 Umodzi Highway, Chipata", phone: "+260 216 22 1187", email: "chipata@palianmoney.co.zm" },
+  { province: "Northern Province", name: "Kasama — Musenga Road", address: "12 Musenga Road, Kasama", phone: "+260 214 22 3305", email: "kasama@palianmoney.co.zm" },
+  { province: "Luapula Province", name: "Mansa — Chimese Road", address: "7 Chimese Road, Mansa", phone: "+260 214 82 1029", email: "mansa@palianmoney.co.zm" },
+  { province: "Western Province", name: "Mongu — Kaunda Ave", address: "21 Kaunda Avenue, Mongu", phone: "+260 217 22 0894", email: "mongu@palianmoney.co.zm" },
+  { province: "North-Western Province", name: "Solwezi — Mumena Road", address: "3 Mumena Road, Solwezi", phone: "+260 218 82 1465", email: "solwezi@palianmoney.co.zm" },
+  { province: "Muchinga Province", name: "Chinsali — Great North Rd", address: "9 Great North Road, Chinsali", phone: "+260 214 50 2210", email: "chinsali@palianmoney.co.zm" },
 ];
-
-const DEMO_ACCOUNT = {
-  name: "Chanda Mwansa",
-  nrc: "123456/78/1",
-  loans: [
-    {
-      id: "PML-20481",
-      product: "Civil Servant Loan",
-      status: "Active",
-      principal: 45000,
-      balance: 27350,
-      monthly: 2870,
-      nextDue: "18 Aug 2026",
-      opened: "02 Feb 2025",
-      term: "24 months",
-    },
-    {
-      id: "PML-19204",
-      product: "Salary Advance",
-      status: "Settled",
-      principal: 8000,
-      balance: 0,
-      monthly: 0,
-      nextDue: "—",
-      opened: "10 Sep 2024",
-      term: "3 months",
-    },
-  ],
-  payments: [
-    { date: "18 Jul 2026", loan: "PML-20481", amount: 2870, method: "Payroll Deduction", status: "Paid" },
-    { date: "18 Jun 2026", loan: "PML-20481", amount: 2870, method: "Payroll Deduction", status: "Paid" },
-    { date: "18 May 2026", loan: "PML-20481", amount: 2870, method: "Payroll Deduction", status: "Paid" },
-    { date: "18 Apr 2026", loan: "PML-20481", amount: 2870, method: "Payroll Deduction", status: "Paid" },
-    { date: "10 Dec 2024", loan: "PML-19204", amount: 2750, method: "Mobile Money", status: "Paid" },
-  ],
-};
 
 /* ---------------------------------------------------------------
    HELPERS
@@ -203,10 +176,7 @@ function Nav({ onLoginClick, onDashboardClick, isAuthed }) {
     >
       <div className="max-w-6xl mx-auto flex items-center justify-between px-6 py-4">
         <a href="#home" className="flex items-center gap-2">
-          <span
-            className="flex items-center justify-center rounded-full font-bold"
-            style={{ width: 36, height: 36, background: C.primary, color: "#fff", fontFamily: "Sora, sans-serif", fontSize: 15 }}
-          >P</span>
+          <img src="/logo.png" alt="Palian Money Lending" style={{ width: 40, height: 40, borderRadius: "50%", objectFit: "cover" }} />
           <span style={{ fontFamily: "Sora, sans-serif", fontWeight: 700, color: scrolled ? C.ink : C.paper, fontSize: 18, letterSpacing: "-0.01em", textShadow: scrolled ? "none" : "0 1px 6px rgba(0,0,0,0.35)" }}>
             Palian <span style={{ color: scrolled ? C.primary : C.gold }}>Money Lending</span>
           </span>
@@ -429,7 +399,7 @@ function HowItWorks() {
 ----------------------------------------------------------------*/
 function LoanCalculator() {
   const [amount, setAmount] = useState(25000);
-  const [rate, setRate] = useState(18);
+  const [rate, setRate] = useState(35);
   const [months, setMonths] = useState(12);
   const [stamped, setStamped] = useState(false);
 
@@ -557,18 +527,75 @@ function About() {
 }
 
 /* ---------------------------------------------------------------
+   MANAGEMENT TEAM
+----------------------------------------------------------------*/
+function Team() {
+  const [members, setMembers] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    supabase
+      .from("team_members")
+      .select("*")
+      .order("sort_order", { ascending: true })
+      .then(({ data }) => {
+        if (!cancelled) {
+          setMembers(data || []);
+          setLoading(false);
+        }
+      });
+    return () => { cancelled = true; };
+  }, []);
+
+  return (
+    <section id="team" className="py-24" style={{ background: C.tint }}>
+      <div className="max-w-6xl mx-auto px-6">
+        <SectionHead eyebrow="Our People" title="Management &amp; Staff" sub="The team behind every loan decision." />
+        {loading ? null : members.length === 0 ? (
+          <div className="dash-panel" style={{ background: "#fff" }}>
+            <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13.5, color: C.muted }}>
+              Team members will appear here once added from the Admin Panel.
+            </p>
+          </div>
+        ) : (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {members.map((t) => {
+              const initials = t.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
+              return (
+                <div key={t.id} className="team-card">
+                  {t.photo_url ? (
+                    <img src={t.photo_url} alt={t.name} className="team-photo" />
+                  ) : (
+                    <div className="team-photo team-photo-placeholder">{initials}</div>
+                  )}
+                  <h4 style={{ fontFamily: "Sora, sans-serif", fontWeight: 600, fontSize: 15.5, color: C.ink, marginTop: 14 }}>{t.name}</h4>
+                  <div className="mono" style={{ fontSize: 11, color: C.primary, fontWeight: 600, marginTop: 2 }}>{t.role}</div>
+                  {t.bio && <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13, color: C.muted, marginTop: 8, lineHeight: 1.55 }}>{t.bio}</p>}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+/* ---------------------------------------------------------------
    BRANCHES
 ----------------------------------------------------------------*/
 function Branches() {
   return (
     <section id="branches" className="py-24" style={{ background: C.tint }}>
       <div className="max-w-6xl mx-auto px-6">
-        <SectionHead eyebrow="Branch Network" title="Find a branch near you" sub="Fourteen branches nationwide — four flagship locations below." />
+        <SectionHead eyebrow="Branch Network" title="A branch in every province" sub="Covering all 10 provinces of Zambia, with two flagship locations on the Copperbelt." />
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {BRANCHES.map((b) => (
             <div key={b.name} className="branch-card">
               <MapPin size={18} color={C.primary} />
-              <h4 style={{ fontFamily: "Sora, sans-serif", fontWeight: 600, fontSize: 15, color: C.ink, marginTop: 10 }}>{b.name}</h4>
+              <div className="mono" style={{ fontSize: 10.5, color: C.gold, fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase", marginTop: 10 }}>{b.province}</div>
+              <h4 style={{ fontFamily: "Sora, sans-serif", fontWeight: 600, fontSize: 15, color: C.ink, marginTop: 4 }}>{b.name}</h4>
               <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13, color: C.muted, marginTop: 6, lineHeight: 1.5 }}>{b.address}</p>
               <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13, color: C.muted, marginTop: 4 }}>{b.phone}</p>
               <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13, color: C.muted }}>{b.email}</p>
@@ -625,6 +652,24 @@ function Testimonials() {
 }
 
 /* ---------------------------------------------------------------
+   MOVING WALLPAPER BAND
+----------------------------------------------------------------*/
+function MovingWallpaper() {
+  return (
+    <section className="wallpaper-band">
+      <div className="wallpaper-img" style={{ backgroundImage: "url('/giraffes.jpg')" }} />
+      <div className="wallpaper-overlay" />
+      <div className="relative max-w-3xl mx-auto px-6 text-center">
+        <div className="eyebrow mb-4"><span className="dot" /> Palian Money Lending</div>
+        <h2 style={{ fontFamily: "Sora, sans-serif", fontWeight: 700, fontSize: "clamp(1.6rem, 3.4vw, 2.4rem)", color: "#fff", letterSpacing: "-0.01em" }}>
+          "We Got You" — steady, patient, always moving forward with you.
+        </h2>
+      </div>
+    </section>
+  );
+}
+
+/* ---------------------------------------------------------------
    FAQ
 ----------------------------------------------------------------*/
 function FAQ() {
@@ -654,7 +699,36 @@ function FAQ() {
 ----------------------------------------------------------------*/
 function ApplyContact() {
   const [submitted, setSubmitted] = useState(false);
-  const onSubmit = (e) => { e.preventDefault(); setSubmitted(true); };
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+  const [form, setForm] = useState({
+    first_name: "", last_name: "", nrc: "", phone: "", email: "",
+    loan_type: "", loan_amount: "", branch: "", purpose: "",
+  });
+  const set = (key) => (v) => setForm((f) => ({ ...f, [key]: v }));
+
+  const onSubmit = async (e) => {
+    e.preventDefault();
+    setSubmitting(true);
+    setError("");
+    const { error: insertError } = await supabase.from("loan_applications").insert({
+      first_name: form.first_name,
+      last_name: form.last_name,
+      nrc: form.nrc,
+      phone: form.phone,
+      email: form.email || null,
+      loan_type: form.loan_type || null,
+      loan_amount: form.loan_amount ? Number(form.loan_amount) : null,
+      branch: form.branch || null,
+      purpose: form.purpose || null,
+    });
+    setSubmitting(false);
+    if (insertError) {
+      setError("Couldn't submit right now — please call or WhatsApp us instead.");
+      return;
+    }
+    setSubmitted(true);
+  };
 
   return (
     <section id="apply" className="max-w-6xl mx-auto px-6 py-24">
@@ -678,19 +752,20 @@ function ApplyContact() {
             </div>
           ) : (
             <form onSubmit={onSubmit} className="grid sm:grid-cols-2 gap-4">
-              <Field label="First Name" required />
-              <Field label="Last Name" required />
-              <Field label="NRC Number" placeholder="000000/00/0" required />
-              <Field label="Phone Number" type="tel" required />
-              <Field label="Email" type="email" />
-              <SelectField label="Loan Type" options={PRODUCTS.map((p) => p.name)} />
-              <Field label="Loan Amount (K)" type="number" />
-              <SelectField label="Branch" options={BRANCHES.map((b) => b.name)} />
+              <Field label="First Name" required value={form.first_name} onChange={set("first_name")} />
+              <Field label="Last Name" required value={form.last_name} onChange={set("last_name")} />
+              <Field label="NRC Number" placeholder="000000/00/0" required value={form.nrc} onChange={set("nrc")} />
+              <Field label="Phone Number" type="tel" required value={form.phone} onChange={set("phone")} />
+              <Field label="Email" type="email" value={form.email} onChange={set("email")} />
+              <SelectField label="Loan Type" options={PRODUCTS.map((p) => p.name)} value={form.loan_type} onChange={set("loan_type")} />
+              <Field label="Loan Amount (K)" type="number" value={form.loan_amount} onChange={set("loan_amount")} />
+              <SelectField label="Branch" options={BRANCHES.map((b) => b.name)} value={form.branch} onChange={set("branch")} />
               <div className="sm:col-span-2">
-                <Field label="Purpose of Loan" textarea />
+                <Field label="Purpose of Loan" textarea value={form.purpose} onChange={set("purpose")} />
               </div>
-              <button type="submit" className="btn-gold sm:col-span-2 justify-center mt-2">
-                Submit Application <Send size={16} />
+              {error && <div className="sm:col-span-2 auth-error"><AlertCircle size={15} /> {error}</div>}
+              <button type="submit" disabled={submitting} className="btn-gold sm:col-span-2 justify-center mt-2" style={{ opacity: submitting ? 0.7 : 1 }}>
+                {submitting ? "Submitting…" : "Submit Application"} <Send size={16} />
               </button>
               <p className="sm:col-span-2 text-center" style={{ fontFamily: "Inter, sans-serif", fontSize: 11.5, color: C.muted }}>
                 Document upload (NRC, payslip, bank statement) is completed with your branch officer after this step.
@@ -703,18 +778,18 @@ function ApplyContact() {
           <div className="contact-panel">
             <h3 style={{ fontFamily: "Sora, sans-serif", fontWeight: 600, fontSize: 17, color: "#fff" }}>Talk to us directly</h3>
             <div className="flex flex-col gap-4 mt-6">
-              <ContactRow icon={Phone} label="Call us" value="+260 211 22 3344" />
-              <ContactRow icon={Mail} label="Email" value="info@palianmoney.co.zm" />
+              <ContactRow icon={Phone} label="Call us" value="+260 976 767 62 / 0977 903 111" />
+              <ContactRow icon={Mail} label="Email" value="palianml2023@gmail.com" />
               <ContactRow icon={MapPin} label="Head Office" value="Plot 22, Cairo Road, Lusaka" />
               <ContactRow icon={Clock} label="Working Hours" value="Mon–Fri 08:00–17:00 · Sat 08:00–13:00" />
             </div>
             <div className="flex gap-3 mt-8">
-              <a href="https://wa.me/260211223344" target="_blank" rel="noopener noreferrer" className="chat-btn">
+              <a href="https://wa.me/260977903111" target="_blank" rel="noopener noreferrer" className="chat-btn">
                 <MessageCircle size={16} /> WhatsApp
               </a>
-              <a href="#contact" className="chat-btn chat-btn-ghost">
+              <button onClick={() => window.dispatchEvent(new Event("open-message-box"))} className="chat-btn chat-btn-ghost">
                 Live Chat
-              </a>
+              </button>
             </div>
           </div>
         </div>
@@ -723,23 +798,32 @@ function ApplyContact() {
   );
 }
 
-function Field({ label, type = "text", required, placeholder, textarea }) {
+function Field({ label, type = "text", required, placeholder, textarea, value, onChange, disabled }) {
+  const controlled = value !== undefined;
+  const commonProps = {
+    placeholder,
+    required,
+    disabled,
+    ...(controlled
+      ? { value, onChange: (e) => onChange && onChange(e.target.value) }
+      : {}),
+  };
   return (
     <label className="field">
       <span>{label}{required && <span style={{ color: C.gold }}> *</span>}</span>
       {textarea ? (
-        <textarea rows={3} placeholder={placeholder} required={required} />
+        <textarea rows={3} {...commonProps} />
       ) : (
-        <input type={type} placeholder={placeholder} required={required} />
+        <input type={type} {...commonProps} />
       )}
     </label>
   );
 }
-function SelectField({ label, options }) {
+function SelectField({ label, options, value, onChange }) {
   return (
     <label className="field">
       <span>{label}</span>
-      <select defaultValue="">
+      <select value={value ?? ""} onChange={(e) => onChange && onChange(e.target.value)}>
         <option value="" disabled>Select…</option>
         {options.map((o) => <option key={o} value={o}>{o}</option>)}
       </select>
@@ -767,7 +851,7 @@ function Footer() {
       <div className="max-w-6xl mx-auto px-6 py-16 grid md:grid-cols-4 gap-10">
         <div>
           <div className="flex items-center gap-2 mb-4">
-            <span className="flex items-center justify-center rounded-full font-bold" style={{ width: 32, height: 32, background: C.primary, color: "#fff", fontFamily: "Sora, sans-serif", fontSize: 13 }}>P</span>
+            <img src="/logo.png" alt="Palian Money Lending" style={{ width: 34, height: 34, borderRadius: "50%", objectFit: "cover" }} />
             <span style={{ fontFamily: "Sora, sans-serif", fontWeight: 700, color: "#fff", fontSize: 16 }}>Palian Money Lending</span>
           </div>
           <p style={{ fontFamily: "Inter, sans-serif", color: "rgba(255,255,255,0.55)", fontSize: 13, lineHeight: 1.6 }}>
@@ -816,15 +900,40 @@ function LoginPage({ onLogin, onBack }) {
   const [showPw, setShowPw] = useState(false);
   const [remember, setRemember] = useState(true);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [mode, setMode] = useState("signin"); // "signin" | "signup"
 
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault();
     if (!email || !password) {
       setError("Enter both your email and password to continue.");
       return;
     }
     setError("");
-    onLogin(email);
+    setLoading(true);
+
+    if (mode === "signin") {
+      const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password });
+      setLoading(false);
+      if (authError) {
+        setError(authError.message);
+        return;
+      }
+      onLogin(data.user);
+    } else {
+      const { data, error: authError } = await supabase.auth.signUp({ email, password });
+      setLoading(false);
+      if (authError) {
+        setError(authError.message);
+        return;
+      }
+      if (data.session) {
+        onLogin(data.user);
+      } else {
+        setError("Check your email to confirm your account, then sign in.");
+        setMode("signin");
+      }
+    }
   };
 
   return (
@@ -836,12 +945,16 @@ function LoginPage({ onLogin, onBack }) {
         </button>
 
         <div className="flex items-center gap-2 mb-1">
-          <span className="flex items-center justify-center rounded-full font-bold" style={{ width: 34, height: 34, background: C.primary, color: "#fff", fontFamily: "Sora, sans-serif", fontSize: 14 }}>P</span>
+          <img src="/logo.png" alt="Palian Money Lending" style={{ width: 34, height: 34, borderRadius: "50%", objectFit: "cover" }} />
           <span style={{ fontFamily: "Sora, sans-serif", fontWeight: 700, color: C.ink, fontSize: 16 }}>Palian <span style={{ color: C.primary }}>Customer Portal</span></span>
         </div>
-        <h1 style={{ fontFamily: "Sora, sans-serif", fontWeight: 700, fontSize: 24, color: C.ink, marginTop: 18 }}>Welcome back</h1>
+        <h1 style={{ fontFamily: "Sora, sans-serif", fontWeight: 700, fontSize: 24, color: C.ink, marginTop: 18 }}>
+          {mode === "signin" ? "Welcome back" : "Create your account"}
+        </h1>
         <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13.5, color: C.muted, marginTop: 4 }}>
-          Sign in to view your loan status, payments and statements.
+          {mode === "signin"
+            ? "Sign in to view your loan status, payments and statements."
+            : "Set up portal access to track your loan online."}
         </p>
 
         <form onSubmit={submit} className="flex flex-col gap-4 mt-7">
@@ -871,11 +984,19 @@ function LoginPage({ onLogin, onBack }) {
             <a href="#" style={{ fontFamily: "Inter, sans-serif", fontSize: 12.5, color: C.primary, fontWeight: 600, textDecoration: "none" }}>Forgot password?</a>
           </div>
 
-          <button type="submit" className="btn-gold justify-center mt-2">Sign In <ArrowRight size={16} /></button>
+          <button type="submit" disabled={loading} className="btn-gold justify-center mt-2" style={{ opacity: loading ? 0.7 : 1 }}>
+            {loading ? "Please wait…" : mode === "signin" ? "Sign In" : "Create Account"} <ArrowRight size={16} />
+          </button>
         </form>
 
-        <p className="mt-6 text-center" style={{ fontFamily: "Inter, sans-serif", fontSize: 12, color: C.muted }}>
-          Demo portal — enter any email &amp; password to preview the dashboard.
+        <p className="mt-6 text-center" style={{ fontFamily: "Inter, sans-serif", fontSize: 12.5, color: C.muted }}>
+          {mode === "signin" ? "New customer?" : "Already have an account?"}{" "}
+          <button
+            onClick={() => { setMode(mode === "signin" ? "signup" : "signin"); setError(""); }}
+            style={{ color: C.primary, fontWeight: 600, background: "none", border: "none", cursor: "pointer", fontFamily: "Inter, sans-serif", fontSize: 12.5 }}
+          >
+            {mode === "signin" ? "Create an account" : "Sign in instead"}
+          </button>
         </p>
       </div>
     </div>
@@ -885,9 +1006,64 @@ function LoginPage({ onLogin, onBack }) {
 /* ---------------------------------------------------------------
    CUSTOMER DASHBOARD
 ----------------------------------------------------------------*/
-function Dashboard({ email, onLogout }) {
+function Dashboard({ user, onLogout }) {
   const [tab, setTab] = useState("overview");
-  const activeLoan = DEMO_ACCOUNT.loans.find((l) => l.status === "Active");
+  const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = useState(null);
+  const [loans, setLoans] = useState([]);
+  const [payments, setPayments] = useState([]);
+  const [profileForm, setProfileForm] = useState({ full_name: "", phone: "" });
+  const [saveMsg, setSaveMsg] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      setLoading(true);
+
+      const { data: customer } = await supabase
+        .from("customers")
+        .select("*")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      const { data: loanRows } = await supabase
+        .from("loans")
+        .select("*")
+        .eq("customer_id", user.id)
+        .order("opened_date", { ascending: false });
+
+      const loanIds = (loanRows || []).map((l) => l.id);
+      let paymentRows = [];
+      if (loanIds.length > 0) {
+        const { data } = await supabase
+          .from("payments")
+          .select("*")
+          .in("loan_id", loanIds)
+          .order("paid_at", { ascending: false });
+        paymentRows = data || [];
+      }
+
+      if (!cancelled) {
+        setProfile(customer);
+        setLoans(loanRows || []);
+        setPayments(paymentRows);
+        setProfileForm({ full_name: customer?.full_name || "", phone: customer?.phone || "" });
+        setLoading(false);
+      }
+    }
+    load();
+    return () => { cancelled = true; };
+  }, [user.id]);
+
+  const saveProfile = async () => {
+    setSaveMsg("");
+    const { error } = await supabase
+      .from("customers")
+      .upsert({ id: user.id, full_name: profileForm.full_name, phone: profileForm.phone });
+    setSaveMsg(error ? `Couldn't save: ${error.message}` : "Saved.");
+  };
+
+  const activeLoan = loans.find((l) => l.status === "Active");
   const tabs = [
     { id: "overview", label: "Overview", icon: LayoutDashboard },
     { id: "payments", label: "Payment History", icon: History },
@@ -895,12 +1071,20 @@ function Dashboard({ email, onLogout }) {
     { id: "profile", label: "Profile Settings", icon: Settings },
   ];
 
+  if (loading) {
+    return (
+      <div style={{ minHeight: "100vh", background: C.tint, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <p style={{ fontFamily: "Inter, sans-serif", color: C.muted }}>Loading your account…</p>
+      </div>
+    );
+  }
+
   return (
     <div style={{ minHeight: "100vh", background: C.tint }}>
       <div style={{ background: C.ink }}>
         <div className="max-w-6xl mx-auto px-6 py-5 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="flex items-center justify-center rounded-full font-bold" style={{ width: 34, height: 34, background: C.primary, color: "#fff", fontFamily: "Sora, sans-serif", fontSize: 14 }}>P</span>
+            <img src="/logo.png" alt="Palian Money Lending" style={{ width: 34, height: 34, borderRadius: "50%", objectFit: "cover" }} />
             <span style={{ fontFamily: "Sora, sans-serif", fontWeight: 700, color: "#fff", fontSize: 15 }}>Customer Portal</span>
           </div>
           <button onClick={onLogout} className="chat-btn chat-btn-ghost" style={{ padding: "8px 14px" }}>
@@ -913,9 +1097,11 @@ function Dashboard({ email, onLogout }) {
         <div className="mb-8">
           <div className="eyebrow-dark mb-1">Dashboard</div>
           <h1 style={{ fontFamily: "Sora, sans-serif", fontWeight: 700, fontSize: 26, color: C.ink }}>
-            Welcome, {DEMO_ACCOUNT.name.split(" ")[0]}
+            Welcome{profile?.full_name ? `, ${profile.full_name.split(" ")[0]}` : ""}
           </h1>
-          <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13, color: C.muted, marginTop: 2 }}>{email} · NRC {DEMO_ACCOUNT.nrc}</p>
+          <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13, color: C.muted, marginTop: 2 }}>
+            {user.email}{profile?.nrc ? ` · NRC ${profile.nrc}` : ""}
+          </p>
         </div>
 
         <div className="dash-tabs">
@@ -928,87 +1114,109 @@ function Dashboard({ email, onLogout }) {
 
         {tab === "overview" && (
           <div className="mt-6 flex flex-col gap-6">
-            <div className="grid sm:grid-cols-3 gap-4">
-              <div className="dash-stat">
-                <div className="dash-stat-label">Outstanding Balance</div>
-                <div className="dash-stat-value mono">{fmtK(activeLoan.balance)}</div>
+            {activeLoan ? (
+              <div className="grid sm:grid-cols-3 gap-4">
+                <div className="dash-stat">
+                  <div className="dash-stat-label">Outstanding Balance</div>
+                  <div className="dash-stat-value mono">{fmtK(activeLoan.balance)}</div>
+                </div>
+                <div className="dash-stat">
+                  <div className="dash-stat-label">Next Payment Due</div>
+                  <div className="dash-stat-value">{activeLoan.next_due || "—"}</div>
+                </div>
+                <div className="dash-stat">
+                  <div className="dash-stat-label">Monthly Installment</div>
+                  <div className="dash-stat-value mono">{fmtK(activeLoan.monthly_installment)}</div>
+                </div>
               </div>
-              <div className="dash-stat">
-                <div className="dash-stat-label">Next Payment Due</div>
-                <div className="dash-stat-value">{activeLoan.nextDue}</div>
+            ) : (
+              <div className="dash-panel">
+                <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13.5, color: C.muted }}>
+                  No active loan on file yet. Once a branch officer processes your application, it will appear here.
+                </p>
               </div>
-              <div className="dash-stat">
-                <div className="dash-stat-label">Monthly Installment</div>
-                <div className="dash-stat-value mono">{fmtK(activeLoan.monthly)}</div>
-              </div>
-            </div>
+            )}
 
-            <div>
-              <h3 style={{ fontFamily: "Sora, sans-serif", fontWeight: 600, fontSize: 16, color: C.ink, marginBottom: 12 }}>Your Loans</h3>
-              <div className="flex flex-col gap-3">
-                {DEMO_ACCOUNT.loans.map((l) => (
-                  <div key={l.id} className="loan-row">
-                    <div>
-                      <div style={{ fontFamily: "Sora, sans-serif", fontWeight: 600, fontSize: 14.5, color: C.ink }}>{l.product}</div>
-                      <div className="mono" style={{ fontFamily: "Inter, sans-serif", fontSize: 12, color: C.muted, marginTop: 2 }}>{l.id} · opened {l.opened} · {l.term}</div>
-                    </div>
-                    <div className="flex items-center gap-6 flex-wrap">
-                      <div className="text-right">
-                        <div style={{ fontFamily: "Inter, sans-serif", fontSize: 11, color: C.muted }}>Balance</div>
-                        <div className="mono" style={{ fontWeight: 600, color: C.ink, fontSize: 13.5 }}>{fmtK(l.balance)}</div>
+            {loans.length > 0 && (
+              <div>
+                <h3 style={{ fontFamily: "Sora, sans-serif", fontWeight: 600, fontSize: 16, color: C.ink, marginBottom: 12 }}>Your Loans</h3>
+                <div className="flex flex-col gap-3">
+                  {loans.map((l) => (
+                    <div key={l.id} className="loan-row">
+                      <div>
+                        <div style={{ fontFamily: "Sora, sans-serif", fontWeight: 600, fontSize: 14.5, color: C.ink }}>{l.product}</div>
+                        <div className="mono" style={{ fontFamily: "Inter, sans-serif", fontSize: 12, color: C.muted, marginTop: 2 }}>{l.id} · opened {l.opened_date} · {l.term_months} mo</div>
                       </div>
-                      <span className={`status-pill ${l.status === "Active" ? "status-active" : "status-settled"}`}>{l.status}</span>
+                      <div className="flex items-center gap-6 flex-wrap">
+                        <div className="text-right">
+                          <div style={{ fontFamily: "Inter, sans-serif", fontSize: 11, color: C.muted }}>Balance</div>
+                          <div className="mono" style={{ fontWeight: 600, color: C.ink, fontSize: 13.5 }}>{fmtK(l.balance)}</div>
+                        </div>
+                        <span className={`status-pill ${l.status === "Active" ? "status-active" : "status-settled"}`}>{l.status}</span>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
           </div>
         )}
 
         {tab === "payments" && (
           <div className="mt-6 dash-panel">
             <h3 style={{ fontFamily: "Sora, sans-serif", fontWeight: 600, fontSize: 16, color: C.ink, marginBottom: 14 }}>Payment History</h3>
-            <div className="table-wrap">
-              <table className="dash-table">
-                <thead>
-                  <tr><th>Date</th><th>Loan</th><th>Amount</th><th>Method</th><th>Status</th></tr>
-                </thead>
-                <tbody>
-                  {DEMO_ACCOUNT.payments.map((p, i) => (
-                    <tr key={i}>
-                      <td>{p.date}</td>
-                      <td className="mono">{p.loan}</td>
-                      <td className="mono">{fmtK(p.amount)}</td>
-                      <td>{p.method}</td>
-                      <td><span className="status-pill status-settled">{p.status}</span></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            {payments.length === 0 ? (
+              <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13.5, color: C.muted }}>No payments recorded yet.</p>
+            ) : (
+              <div className="table-wrap">
+                <table className="dash-table">
+                  <thead>
+                    <tr><th>Date</th><th>Loan</th><th>Amount</th><th>Method</th><th>Status</th></tr>
+                  </thead>
+                  <tbody>
+                    {payments.map((p) => (
+                      <tr key={p.id}>
+                        <td>{new Date(p.paid_at).toLocaleDateString()}</td>
+                        <td className="mono">{p.loan_id}</td>
+                        <td className="mono">{fmtK(p.amount)}</td>
+                        <td>{p.method}</td>
+                        <td><span className="status-pill status-settled">{p.status}</span></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
 
         {tab === "statements" && (
           <div className="mt-6 dash-panel">
             <h3 style={{ fontFamily: "Sora, sans-serif", fontWeight: 600, fontSize: 16, color: C.ink, marginBottom: 14 }}>Download Statements</h3>
-            <div className="flex flex-col gap-3">
-              {DEMO_ACCOUNT.loans.map((l) => (
-                <div key={l.id} className="statement-row">
-                  <div className="flex items-center gap-3">
-                    <FileText size={18} color={C.primary} />
-                    <div>
-                      <div style={{ fontFamily: "Sora, sans-serif", fontWeight: 600, fontSize: 13.5, color: C.ink }}>{l.product} statement</div>
-                      <div style={{ fontFamily: "Inter, sans-serif", fontSize: 11.5, color: C.muted }}>{l.id} · updated {DEMO_ACCOUNT.payments[0].date}</div>
+            {loans.length === 0 ? (
+              <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13.5, color: C.muted }}>No loans on file yet — statements will appear here once one is opened.</p>
+            ) : (
+              <div className="flex flex-col gap-3">
+                {loans.map((l) => (
+                  <div key={l.id} className="statement-row">
+                    <div className="flex items-center gap-3">
+                      <FileText size={18} color={C.primary} />
+                      <div>
+                        <div style={{ fontFamily: "Sora, sans-serif", fontWeight: 600, fontSize: 13.5, color: C.ink }}>{l.product} statement</div>
+                        <div style={{ fontFamily: "Inter, sans-serif", fontSize: 11.5, color: C.muted }}>{l.id}</div>
+                      </div>
                     </div>
+                    <button
+                      className="chat-btn"
+                      style={{ background: C.primary }}
+                      onClick={() => alert("Statement PDF generation isn't wired up yet — this needs a Supabase Edge Function or Storage bucket to generate/host the file.")}
+                    >
+                      <Download size={14} /> PDF
+                    </button>
                   </div>
-                  <button className="chat-btn" style={{ background: C.primary }} onClick={() => alert(`Demo portal: "${l.product} statement" would download here.`)}>
-                    <Download size={14} /> PDF
-                  </button>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -1016,12 +1224,288 @@ function Dashboard({ email, onLogout }) {
           <div className="mt-6 dash-panel" style={{ maxWidth: 480 }}>
             <h3 style={{ fontFamily: "Sora, sans-serif", fontWeight: 600, fontSize: 16, color: C.ink, marginBottom: 14 }}>Profile Settings</h3>
             <div className="flex flex-col gap-4">
-              <Field label="Full Name" placeholder={DEMO_ACCOUNT.name} />
-              <Field label="Email" placeholder={email} />
-              <Field label="Phone Number" placeholder="+260 97 000 0000" />
-              <button className="btn-gold w-fit" onClick={() => alert("Demo portal: changes are not persisted.")}>Save Changes</button>
+              <Field label="Full Name" value={profileForm.full_name} onChange={(v) => setProfileForm({ ...profileForm, full_name: v })} />
+              <Field label="Email" placeholder={user.email} disabled />
+              <Field label="Phone Number" value={profileForm.phone} onChange={(v) => setProfileForm({ ...profileForm, phone: v })} placeholder="+260 97 000 0000" />
+              <button className="btn-gold w-fit" onClick={saveProfile}>Save Changes</button>
+              {saveMsg && <p style={{ fontFamily: "Inter, sans-serif", fontSize: 12.5, color: C.muted }}>{saveMsg}</p>}
             </div>
           </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------------
+   FLOATING MESSAGE BOX (public — inserts into Supabase `messages`)
+----------------------------------------------------------------*/
+function MessageBox() {
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [message, setMessage] = useState("");
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const handler = () => setOpen(true);
+    window.addEventListener("open-message-box", handler);
+    return () => window.removeEventListener("open-message-box", handler);
+  }, []);
+
+  const send = async (e) => {
+    e.preventDefault();
+    if (!message.trim()) return;
+    setSending(true);
+    setError("");
+    const { error: insertError } = await supabase.from("messages").insert({ name, email, message });
+    setSending(false);
+    if (insertError) {
+      setError("Couldn't send — please try WhatsApp instead.");
+      return;
+    }
+    setSent(true);
+    setName(""); setEmail(""); setMessage("");
+    setTimeout(() => { setSent(false); setOpen(false); }, 2500);
+  };
+
+  return (
+    <>
+      <button onClick={() => setOpen(!open)} className="msg-fab" aria-label="Open message box">
+        {open ? <X size={22} /> : <MessageCircle size={22} />}
+      </button>
+
+      {open && (
+        <div className="msg-panel">
+          <div className="msg-panel-header">
+            <img src="/logo.png" alt="Palian" style={{ width: 26, height: 26, borderRadius: "50%", objectFit: "cover" }} />
+            <div>
+              <div style={{ fontFamily: "Sora, sans-serif", fontWeight: 600, fontSize: 13.5, color: "#fff" }}>Message Palian</div>
+              <div style={{ fontFamily: "Inter, sans-serif", fontSize: 11, color: "rgba(255,255,255,0.7)" }}>We usually reply within a day</div>
+            </div>
+          </div>
+
+          {sent ? (
+            <div className="msg-sent">
+              <CheckCircle2 size={22} color={C.primary} />
+              <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13, color: C.ink, marginTop: 8 }}>Message sent — thank you.</p>
+            </div>
+          ) : (
+            <form onSubmit={send} className="msg-form">
+              <input placeholder="Your name" value={name} onChange={(e) => setName(e.target.value)} />
+              <input placeholder="Email (optional)" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+              <textarea placeholder="How can we help?" rows={3} value={message} onChange={(e) => setMessage(e.target.value)} required />
+              {error && <div className="auth-error"><AlertCircle size={13} /> {error}</div>}
+              <button type="submit" disabled={sending} className="btn-gold justify-center" style={{ opacity: sending ? 0.7 : 1 }}>
+                {sending ? "Sending…" : "Send"} <Send size={14} />
+              </button>
+            </form>
+          )}
+        </div>
+      )}
+    </>
+  );
+}
+
+/* ---------------------------------------------------------------
+   ADMIN PANEL — team management, message inbox, applications
+----------------------------------------------------------------*/
+function AdminPanel({ user, onLogout }) {
+  const [tab, setTab] = useState("team");
+  const [members, setMembers] = useState([]);
+  const [messages, setMessages] = useState([]);
+  const [applications, setApplications] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [form, setForm] = useState({ id: null, role: "", name: "", bio: "", photo_url: "" });
+  const [uploading, setUploading] = useState(false);
+  const [saveMsg, setSaveMsg] = useState("");
+
+  const loadAll = useCallback(async () => {
+    setLoading(true);
+    const [{ data: t }, { data: m }, { data: a }] = await Promise.all([
+      supabase.from("team_members").select("*").order("sort_order", { ascending: true }),
+      supabase.from("messages").select("*").order("created_at", { ascending: false }),
+      supabase.from("loan_applications").select("*").order("submitted_at", { ascending: false }),
+    ]);
+    setMembers(t || []);
+    setMessages(m || []);
+    setApplications(a || []);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { loadAll(); }, [loadAll]);
+
+  const resetForm = () => setForm({ id: null, role: "", name: "", bio: "", photo_url: "" });
+
+  const uploadPhoto = async (file) => {
+    setUploading(true);
+    const path = `${user.id}/${Date.now()}-${file.name}`;
+    const { error } = await supabase.storage.from("team-photos").upload(path, file);
+    setUploading(false);
+    if (error) { setSaveMsg(`Photo upload failed: ${error.message}`); return; }
+    const { data } = supabase.storage.from("team-photos").getPublicUrl(path);
+    setForm((f) => ({ ...f, photo_url: data.publicUrl }));
+  };
+
+  const saveMember = async (e) => {
+    e.preventDefault();
+    setSaveMsg("");
+    const payload = { role: form.role, name: form.name, bio: form.bio, photo_url: form.photo_url || null };
+    const { error } = form.id
+      ? await supabase.from("team_members").update(payload).eq("id", form.id)
+      : await supabase.from("team_members").insert(payload);
+    if (error) { setSaveMsg(`Couldn't save: ${error.message}`); return; }
+    resetForm();
+    loadAll();
+  };
+
+  const editMember = (m) => setForm({ id: m.id, role: m.role, name: m.name, bio: m.bio || "", photo_url: m.photo_url || "" });
+
+  const deleteMember = async (id) => {
+    await supabase.from("team_members").delete().eq("id", id);
+    loadAll();
+  };
+
+  const deleteMessage = async (id) => {
+    await supabase.from("messages").delete().eq("id", id);
+    loadAll();
+  };
+
+  const tabs = [
+    { id: "team", label: "Team Members", icon: Users },
+    { id: "messages", label: `Messages${messages.length ? ` (${messages.length})` : ""}`, icon: MessageCircle },
+    { id: "applications", label: `Applications${applications.length ? ` (${applications.length})` : ""}`, icon: FileText },
+  ];
+
+  return (
+    <div style={{ minHeight: "100vh", background: C.tint }}>
+      <div style={{ background: C.ink }}>
+        <div className="max-w-6xl mx-auto px-6 py-5 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <img src="/logo.png" alt="Palian" style={{ width: 34, height: 34, borderRadius: "50%", objectFit: "cover" }} />
+            <span style={{ fontFamily: "Sora, sans-serif", fontWeight: 700, color: "#fff", fontSize: 15 }}>Admin Panel</span>
+          </div>
+          <button onClick={onLogout} className="chat-btn chat-btn-ghost" style={{ padding: "8px 14px" }}>
+            <LogOut size={15} /> Log Out
+          </button>
+        </div>
+      </div>
+
+      <div className="max-w-6xl mx-auto px-6 py-10">
+        <div className="mb-8">
+          <div className="eyebrow-dark mb-1">Signed in as admin</div>
+          <h1 style={{ fontFamily: "Sora, sans-serif", fontWeight: 700, fontSize: 26, color: C.ink }}>{user.email}</h1>
+        </div>
+
+        <div className="dash-tabs">
+          {tabs.map((t) => (
+            <button key={t.id} onClick={() => setTab(t.id)} className={`dash-tab ${tab === t.id ? "dash-tab-active" : ""}`}>
+              <t.icon size={15} /> {t.label}
+            </button>
+          ))}
+        </div>
+
+        {loading ? (
+          <p className="mt-6" style={{ fontFamily: "Inter, sans-serif", color: C.muted }}>Loading…</p>
+        ) : (
+          <>
+            {tab === "team" && (
+              <div className="mt-6 grid lg:grid-cols-5 gap-6">
+                <div className="lg:col-span-2 dash-panel">
+                  <h3 style={{ fontFamily: "Sora, sans-serif", fontWeight: 600, fontSize: 15, color: C.ink, marginBottom: 14 }}>
+                    {form.id ? "Edit team member" : "Add team member"}
+                  </h3>
+                  <form onSubmit={saveMember} className="flex flex-col gap-3">
+                    <Field label="Full Name" value={form.name} onChange={(v) => setForm({ ...form, name: v })} required />
+                    <Field label="Role / Position" value={form.role} onChange={(v) => setForm({ ...form, role: v })} required />
+                    <Field label="Short Bio" value={form.bio} onChange={(v) => setForm({ ...form, bio: v })} textarea />
+                    <label className="field">
+                      <span>Photo</span>
+                      <input type="file" accept="image/*" onChange={(e) => e.target.files[0] && uploadPhoto(e.target.files[0])} />
+                    </label>
+                    {form.photo_url && <img src={form.photo_url} alt="" style={{ width: 48, height: 48, borderRadius: "50%", objectFit: "cover" }} />}
+                    {uploading && <p style={{ fontFamily: "Inter, sans-serif", fontSize: 12, color: C.muted }}>Uploading…</p>}
+                    <div className="flex gap-2 mt-1">
+                      <button type="submit" className="btn-gold">{form.id ? "Save Changes" : "Add Member"}</button>
+                      {form.id && <button type="button" onClick={resetForm} className="chat-btn chat-btn-ghost" style={{ color: C.ink, borderColor: C.line }}>Cancel</button>}
+                    </div>
+                    {saveMsg && <p style={{ fontFamily: "Inter, sans-serif", fontSize: 12.5, color: C.muted }}>{saveMsg}</p>}
+                  </form>
+                </div>
+
+                <div className="lg:col-span-3 flex flex-col gap-3">
+                  {members.length === 0 && <p style={{ fontFamily: "Inter, sans-serif", color: C.muted, fontSize: 13.5 }}>No team members yet — add the first one.</p>}
+                  {members.map((m) => (
+                    <div key={m.id} className="loan-row">
+                      <div className="flex items-center gap-3">
+                        {m.photo_url ? (
+                          <img src={m.photo_url} alt="" style={{ width: 40, height: 40, borderRadius: "50%", objectFit: "cover" }} />
+                        ) : (
+                          <div className="team-photo team-photo-placeholder" style={{ width: 40, height: 40, fontSize: 13 }}>{m.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}</div>
+                        )}
+                        <div>
+                          <div style={{ fontFamily: "Sora, sans-serif", fontWeight: 600, fontSize: 14, color: C.ink }}>{m.name}</div>
+                          <div className="mono" style={{ fontSize: 11, color: C.primary }}>{m.role}</div>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button onClick={() => editMember(m)} className="chat-btn chat-btn-ghost" style={{ color: C.ink, borderColor: C.line, padding: "6px 12px" }}>Edit</button>
+                        <button onClick={() => deleteMember(m.id)} className="chat-btn" style={{ background: "#B42318", padding: "6px 12px" }}>Delete</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {tab === "messages" && (
+              <div className="mt-6 flex flex-col gap-3">
+                {messages.length === 0 && <p style={{ fontFamily: "Inter, sans-serif", color: C.muted, fontSize: 13.5 }}>No messages yet.</p>}
+                {messages.map((m) => (
+                  <div key={m.id} className="dash-panel">
+                    <div className="flex justify-between items-start gap-4">
+                      <div>
+                        <div style={{ fontFamily: "Sora, sans-serif", fontWeight: 600, fontSize: 14, color: C.ink }}>{m.name || "Anonymous"} {m.email && <span style={{ color: C.muted, fontWeight: 400 }}>· {m.email}</span>}</div>
+                        <div style={{ fontFamily: "Inter, sans-serif", fontSize: 11, color: C.muted, marginTop: 2 }}>{new Date(m.created_at).toLocaleString()}</div>
+                        <p style={{ fontFamily: "Inter, sans-serif", fontSize: 13.5, color: C.ink, marginTop: 8 }}>{m.message}</p>
+                      </div>
+                      <button onClick={() => deleteMessage(m.id)} className="chat-btn" style={{ background: "#B42318", padding: "6px 12px", flexShrink: 0 }}>Delete</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {tab === "applications" && (
+              <div className="mt-6 dash-panel">
+                {applications.length === 0 ? (
+                  <p style={{ fontFamily: "Inter, sans-serif", color: C.muted, fontSize: 13.5 }}>No applications submitted yet.</p>
+                ) : (
+                  <div className="table-wrap">
+                    <table className="dash-table">
+                      <thead>
+                        <tr><th>Date</th><th>Name</th><th>Phone</th><th>Loan Type</th><th>Amount</th><th>Branch</th></tr>
+                      </thead>
+                      <tbody>
+                        {applications.map((a) => (
+                          <tr key={a.id}>
+                            <td>{new Date(a.submitted_at).toLocaleDateString()}</td>
+                            <td>{a.first_name} {a.last_name}</td>
+                            <td>{a.phone}</td>
+                            <td>{a.loan_type}</td>
+                            <td className="mono">{a.loan_amount ? fmtK(a.loan_amount) : "—"}</td>
+                            <td>{a.branch}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
@@ -1171,6 +1655,13 @@ function GlobalStyles() {
       }
       .value-num { color: ${C.gold}; font-size: 13px; font-weight: 600; }
 
+      .team-card { background: #fff; border-radius: 16px; padding: 22px; border: 1px solid ${C.line}; }
+      .team-photo { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; }
+      .team-photo-placeholder {
+        display: flex; align-items: center; justify-content: center;
+        background: linear-gradient(135deg, ${C.primary}, ${C.secondary});
+        color: #fff; font-family: 'Sora', sans-serif; font-weight: 700; font-size: 16px;
+      }
       .branch-card { background: #fff; border-radius: 14px; padding: 20px; border: 1px solid ${C.line}; }
       .branch-link {
         display: inline-flex; align-items: center; gap: 4px; margin-top: 12px;
@@ -1223,6 +1714,48 @@ function GlobalStyles() {
       @media (prefers-reduced-motion: reduce) {
         .seal-float, .stamp { animation: none !important; }
       }
+
+      /* Moving wallpaper */
+      .wallpaper-band {
+        position: relative; overflow: hidden; min-height: 340px;
+        display: flex; align-items: center; justify-content: center; padding: 60px 24px;
+      }
+      .wallpaper-img {
+        position: absolute; inset: -20px; background-size: cover; background-position: center;
+        animation: wallpaperPan 22s ease-in-out infinite alternate;
+      }
+      @keyframes wallpaperPan {
+        0%   { transform: scale(1.05) translate(0, 0); }
+        100% { transform: scale(1.18) translate(-1.5%, -1.5%); }
+      }
+      .wallpaper-overlay {
+        position: absolute; inset: 0; background: linear-gradient(180deg, rgba(7,59,140,0.75), rgba(11,94,215,0.78));
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .wallpaper-img { animation: none !important; }
+      }
+
+      /* Message box */
+      .msg-fab {
+        position: fixed; bottom: 22px; right: 22px; z-index: 60;
+        width: 56px; height: 56px; border-radius: 50%; background: ${C.primary}; color: #fff;
+        display: flex; align-items: center; justify-content: center; border: none; cursor: pointer;
+        box-shadow: 0 10px 30px rgba(11,94,215,0.4);
+      }
+      .msg-panel {
+        position: fixed; bottom: 88px; right: 22px; z-index: 60; width: min(320px, calc(100vw - 44px));
+        background: #fff; border-radius: 16px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.25);
+      }
+      .msg-panel-header {
+        background: ${C.ink}; padding: 16px; display: flex; align-items: center; gap: 10px;
+      }
+      .msg-form { padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+      .msg-form input, .msg-form textarea {
+        border: 1px solid ${C.line}; border-radius: 9px; padding: 9px 11px; font-family: 'Inter', sans-serif;
+        font-size: 13px; color: ${C.ink}; outline: none; resize: vertical;
+      }
+      .msg-form input:focus, .msg-form textarea:focus { border-color: ${C.primary}; }
+      .msg-sent { padding: 24px 16px; text-align: center; }
 
       /* Auth */
       .auth-shell {
@@ -1285,17 +1818,42 @@ function GlobalStyles() {
    APP
 ----------------------------------------------------------------*/
 export default function PalianMoneyLending() {
-  const [view, setView] = useState("site"); // "site" | "login" | "dashboard"
-  const [session, setSession] = useState(null);
+  const [view, setView] = useState("site"); // "site" | "login" | "dashboard" | "admin"
+  const [user, setUser] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [checkingSession, setCheckingSession] = useState(true);
 
-  const handleLogin = (email) => {
-    setSession({ email });
-    setView("dashboard");
-  };
-  const handleLogout = () => {
-    setSession(null);
+  const routeAfterAuth = useCallback(async (authUser) => {
+    setUser(authUser);
+    const { data: adminRow } = await supabase
+      .from("admins")
+      .select("id")
+      .eq("id", authUser.id)
+      .maybeSingle();
+    const admin = !!adminRow;
+    setIsAdmin(admin);
+    setView(admin ? "admin" : "dashboard");
+  }, []);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session?.user) {
+        routeAfterAuth(data.session.user);
+      }
+      setCheckingSession(false);
+    });
+  }, [routeAfterAuth]);
+
+  const handleLogin = (authUser) => routeAfterAuth(authUser);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setUser(null);
+    setIsAdmin(false);
     setView("site");
   };
+
+  if (checkingSession) return null;
 
   if (view === "login") {
     return (
@@ -1306,11 +1864,20 @@ export default function PalianMoneyLending() {
     );
   }
 
-  if (view === "dashboard" && session) {
+  if (view === "admin" && user) {
     return (
       <>
         <GlobalStyles />
-        <Dashboard email={session.email} onLogout={handleLogout} />
+        <AdminPanel user={user} onLogout={handleLogout} />
+      </>
+    );
+  }
+
+  if (view === "dashboard" && user) {
+    return (
+      <>
+        <GlobalStyles />
+        <Dashboard user={user} onLogout={handleLogout} />
       </>
     );
   }
@@ -1319,9 +1886,9 @@ export default function PalianMoneyLending() {
     <div style={{ background: C.paper, minHeight: "100vh" }}>
       <GlobalStyles />
       <Nav
-        isAuthed={!!session}
+        isAuthed={!!user}
         onLoginClick={() => setView("login")}
-        onDashboardClick={() => setView("dashboard")}
+        onDashboardClick={() => setView(isAdmin ? "admin" : "dashboard")}
       />
       <Hero />
       <Stats />
@@ -1330,11 +1897,14 @@ export default function PalianMoneyLending() {
       <HowItWorks />
       <LoanCalculator />
       <About />
+      <Team />
       <Branches />
       <Testimonials />
+      <MovingWallpaper />
       <FAQ />
       <ApplyContact />
       <Footer />
+      <MessageBox />
     </div>
   );
 }
